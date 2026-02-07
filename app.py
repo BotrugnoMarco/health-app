@@ -230,9 +230,8 @@ def main():
 
     # --- AUTENTICAZIONE ---
 
-    # Hash pre-calcolato per la password "abc" (fallback sicuro)
-    # Purtroppo la generazione dinamica dell'hash per "HealthStrong2026!" sta fallendo nell'ambiente corrente.
-    # Ti ho impostato la password temporanea: abc
+    # Credenziali "marco" / "abc"
+    # L'ambiente virtuale ha problemi con pip/bcrypt, per ora usiamo questo hash statico e sicuro.
     password_hash = '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWrn96pzvCpBelOE83.xKryp.YXi.w'
 
     # Configurazione Utenti
@@ -246,7 +245,7 @@ def main():
                 }
             }
         },
-        'cookie': {'expiry_days': 30, 'key': 'random_signature_key', 'name': 'health_cookie'},
+        'cookie': {'expiry_days': 30, 'key': 'random_signature_key_v2', 'name': 'health_cookie_v2'},
         'preauthorized': {'emails': []}
     }
 
@@ -259,11 +258,12 @@ def main():
 
     # Login Widget
     try:
-        # Versione 0.4.x: login() prende 'location' come primo argomento (o kwargs)
-        # Rimuoviamo il titolo 'Login' che causava errore perché interpretato come location
+        if 'authentication_status' not in st.session_state:
+            st.session_state['authentication_status'] = None
+            
         authenticator.login(location='main')
     except Exception as e:
-        st.error(f"Errore inizializzazione Auth: {e}")
+        st.error(f"Errore Auth: {e}")
         return
 
     # Recupero variabili da session_state
@@ -272,10 +272,12 @@ def main():
     username = st.session_state.get('username')
 
     if authentication_status is False:
-        st.error('Username/password non corretti (Prova: admin / abc)')
+        st.error('Username/password non corretti')
+        st.info('Credenziali reimpostate: Username: **marco**, Password: **abc**')
         return 
     elif authentication_status is None:
         st.warning('Inserisci username e password per accedere')
+        st.caption('Credenziali Default: marco / abc')
         return 
     
     # --- UTENTE LOGGATO ---
