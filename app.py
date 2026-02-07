@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import streamlit_authenticator as stauth
 import json
 import yaml
+import bcrypt
 from datetime import datetime
 import time
 
@@ -228,13 +229,14 @@ def main():
     init_db()
 
     # --- AUTENTICAZIONE ---
-    # Generazione Hash Dinamico per "HealthStrong2026!"
-    # Nota: In produzione è meglio generare l'hash una volta e incollarlo come stringa
+    #Generazione Hash Dinamico per "HealthStrong2026!" usando bcrypt direttamente per stabilità
     try:
-        hashed_passwords = stauth.Hasher(['HealthStrong2026!']).generate()
-        password_hash = hashed_passwords[0]
+        # stauth.Hasher può variare tra versioni, usiamo bcrypt standard
+        password_raw = "HealthStrong2026!"
+        # Genera un salt e l'hash
+        # Nota: streamlit-authenticator si aspetta l'hash come stringa
+        password_hash = bcrypt.hashpw(password_raw.encode(), bcrypt.gensalt()).decode()
     except Exception as e:
-        # Fallback se Hasher fallisce (usa hash di 'abc' come backup temporaneo)
         st.error(f"Errore generazione hash: {e}")
         password_hash = '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWrn96pzvCpBelOE83.xKryp.YXi.w'
 
@@ -262,9 +264,9 @@ def main():
 
     # Login Widget
     try:
-        # Versione 0.4.x: login() gestisce widget e session_state, ma potrebbe non ritornare valori unpackable (None)
-        # Usiamo i valori diretti da st.session_state
-        authenticator.login('Login', 'main')
+        # Versione 0.4.x: login() prende 'location' come primo argomento (o kwargs)
+        # Rimuoviamo il titolo 'Login' che causava errore perché interpretato come location
+        authenticator.login(location='main')
     except Exception as e:
         st.error(f"Errore inizializzazione Auth: {e}")
         return
