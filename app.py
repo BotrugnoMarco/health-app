@@ -229,16 +229,18 @@ def main():
     init_db()
 
     # --- AUTENTICAZIONE ---
-    #Generazione Hash Dinamico per "HealthStrong2026!" usando bcrypt direttamente per stabilità
-    try:
-        # stauth.Hasher può variare tra versioni, usiamo bcrypt standard
-        password_raw = "HealthStrong2026!"
-        # Genera un salt e l'hash
-        # Nota: streamlit-authenticator si aspetta l'hash come stringa
-        password_hash = bcrypt.hashpw(password_raw.encode(), bcrypt.gensalt()).decode()
-    except Exception as e:
-        st.error(f"Errore generazione hash: {e}")
-        password_hash = '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWrn96pzvCpBelOE83.xKryp.YXi.w'
+
+    @st.cache_data
+    def get_password_hash(password_raw):
+        """Genera hash della password e lo cacha per evitare rigenerazioni ad ogni rerun"""
+        try:
+            return bcrypt.hashpw(password_raw.encode(), bcrypt.gensalt()).decode()
+        except Exception as e:
+            st.error(f"Errore hashing: {e}")
+            return '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWrn96pzvCpBelOE83.xKryp.YXi.w'
+
+    # Hash stabile per la sessione
+    password_hash = get_password_hash("HealthStrong2026!")
 
     # Configurazione Utenti
     config = {
