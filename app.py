@@ -228,14 +228,24 @@ def main():
     init_db()
 
     # --- AUTENTICAZIONE ---
-    # Configurazione Utenti (Dizionario in formato YAML)
+    # Generazione Hash Dinamico per "HealthStrong2026!"
+    # Nota: In produzione è meglio generare l'hash una volta e incollarlo come stringa
+    try:
+        hashed_passwords = stauth.Hasher(['HealthStrong2026!']).generate()
+        password_hash = hashed_passwords[0]
+    except Exception as e:
+        # Fallback se Hasher fallisce (usa hash di 'abc' come backup temporaneo)
+        st.error(f"Errore generazione hash: {e}")
+        password_hash = '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWrn96pzvCpBelOE83.xKryp.YXi.w'
+
+    # Configurazione Utenti
     config = {
         'credentials': {
             'usernames': {
-                'admin': {
-                    'name': 'Admin User',
-                    'password': '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWrn96pzvCpBelOE83.xKryp.YXi.w', # Password: 'abc'
-                    'email': 'admin@health.com',
+                'marco': {
+                    'name': 'Marco Botrugno',
+                    'password': password_hash,
+                    'email': 'marco@health.com',
                 }
             }
         },
@@ -252,13 +262,17 @@ def main():
 
     # Login Widget
     try:
-        # Nota: La sintassi di login() varia leggermente tra versioni di streamlit-authenticator
-        # Questa è per le versioni recenti (v0.3.0+)
-        name, authentication_status, username = authenticator.login("main")
+        # Versione 0.4.x: login() gestisce widget e session_state, ma potrebbe non ritornare valori unpackable (None)
+        # Usiamo i valori diretti da st.session_state
+        authenticator.login('Login', 'main')
     except Exception as e:
-        # Fallback per versioni molto recenti dove login ritorna un oggetto diverso o ha firma diversa
-        st.error(f"Errore inizializzazione Auth (controlla versione pacchetto): {e}")
+        st.error(f"Errore inizializzazione Auth: {e}")
         return
+
+    # Recupero variabili da session_state
+    authentication_status = st.session_state.get('authentication_status')
+    name = st.session_state.get('name')
+    username = st.session_state.get('username')
 
     if authentication_status is False:
         st.error('Username/password non corretti (Prova: admin / abc)')
