@@ -230,9 +230,24 @@ def main():
 
     # --- AUTENTICAZIONE ---
 
-    # Credenziali "marco" / "abc"
-    # L'ambiente virtuale ha problemi con pip/bcrypt, per ora usiamo questo hash statico e sicuro.
-    password_hash = '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWrn96pzvCpBelOE83.xKryp.YXi.w'
+    # DEBUG: Mostriamo info per capire cosa succede sul server
+    st.sidebar.warning("DEBUG MODE ATTIVO")
+    
+    # 1. Testiamo se bcrypt e stauth sono caricati
+    try:
+        import bcrypt
+        st.sidebar.success(f"Bcrypt versione: {bcrypt.__version__ if hasattr(bcrypt, '__version__') else 'N/A'}")
+        
+        # Generiamo hash fresco per 'abc'
+        # Questo è il test definitivo: se funziona, usiamo questo hash
+        fresh_hash = bcrypt.hashpw('abc'.encode(), bcrypt.gensalt()).decode()
+        st.sidebar.text(f"Hash generato live per 'abc': {fresh_hash[:10]}...")
+        password_hash = fresh_hash # USIAMO QUESTO!
+        
+    except Exception as e:
+        st.sidebar.error(f"Errore generazione hash live: {e}")
+        # Fallback storico
+        password_hash = '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWrn96pzvCpBelOE83.xKryp.YXi.w'
 
     # Configurazione Utenti
     config = {
@@ -245,7 +260,7 @@ def main():
                 }
             }
         },
-        'cookie': {'expiry_days': 30, 'key': 'random_signature_key_v2', 'name': 'health_cookie_v2'},
+        'cookie': {'expiry_days': 1, 'key': 'debug_key_123', 'name': 'debug_cookie'},
         'preauthorized': {'emails': []}
     }
 
@@ -263,21 +278,24 @@ def main():
             
         authenticator.login(location='main')
     except Exception as e:
-        st.error(f"Errore Auth: {e}")
-        return
+        st.error(f"Errore Auth Login: {e}")
 
     # Recupero variabili da session_state
     authentication_status = st.session_state.get('authentication_status')
     name = st.session_state.get('name')
     username = st.session_state.get('username')
+    
+    # DEBUG dello stato
+    if st.sidebar.checkbox("Mostra Stato Auth"):
+        st.sidebar.write(f"Stato: {authentication_status}")
+        st.sidebar.write(f"User: {username}")
 
     if authentication_status is False:
         st.error('Username/password non corretti')
-        st.info('Credenziali reimpostate: Username: **marco**, Password: **abc**')
         return 
     elif authentication_status is None:
         st.warning('Inserisci username e password per accedere')
-        st.caption('Credenziali Default: marco / abc')
+        st.info('Credenziali: marco / abc')
         return 
     
     # --- UTENTE LOGGATO ---
